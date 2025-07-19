@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+build/
+cert/
+index.html
+package-lock.json
+src.tgz
+

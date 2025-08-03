@@ -23,6 +23,8 @@ function Profile() {
   const [newJobTitle,setNewJobTitle]=useState()
   const [floatInfo,setFloatInfo]=useState()
   const [updatePrompts,setUpdatePrompts]=useState(false)
+  const [taTop,setTaTop]=useState(200)
+  let taRef=useRef()
 
 //   const [tabRef,setTabRef]=useState()
   const tabRef=React.createRef()
@@ -39,6 +41,7 @@ function Profile() {
     setSelTab(tab)
     setSelSect(link)
     if(tab!=selTab){doUpdatePrompts()}
+    if(taRef.current){setTaTop(taRef.current.offsetTop)}
 //     setDoc(doc)
 //     setFunc(func)
   })
@@ -49,10 +52,10 @@ function Profile() {
 //   },[])
   var loadInfo=async()=>{
     await waitForWs()
-    cl("waiting")
+//     cl("waiting")
     let user0=await loadUser()
-    cl("got")
-    cl(user0)
+//     cl("got")
+//     cl(user0)
 //     await loadGigs()
     setUser(user0)
   }
@@ -388,7 +391,8 @@ function Profile() {
 //     cl(user)
     if(!user){return}
     return(
-      <div style={{padding:10,textAlign:"left",height:800,overflowY:"auto"}}>
+      <div style={{padding:10,textAlign:"left",
+        height:globs.screen.h-globs.bcHeight,overflowY:"auto"}}>
       {MyTextInput("name","Name")}
       {MyTextInput("age","Age")}
       {MyTextInput("phone","Phone")}
@@ -521,12 +525,12 @@ function Profile() {
 //     cl("transcribe",tab,sect)
 //   }
 
-  var scrollTo=(sect)=>{
-    setSelSect(sect)
-    let pos=sectIds[selTab].map(s=>{return s.v}).indexOf(sect)
-    tabRef.current.scrollTop=900*pos
-//     tabRef.current.scrollTo(900*pos)
-  }
+//   var scrollTo=(sect)=>{
+//     setSelSect(sect)
+//     let pos=sectIds[selTab].map(s=>{return s.v}).indexOf(sect)
+//     tabRef.current.scrollTop=900*pos
+// //     tabRef.current.scrollTo(900*pos)
+//   }
 
   var handleTranscribe=(args)=>{
     cl(args)
@@ -570,9 +574,11 @@ function Profile() {
       if(!user.prompts){user.prompts=prompts}
       if(!user[selTab]){user[selTab]={}}
 //       cl(s,selTab,s.v,user.prompts[selTab])
+      let taHgt=globs.screen.h-globs.bcHeight-taTop-10
       let sects=(
-        <div key={s.v} style={{textAlign:"left",padding:10,height:900}}>
-        <table width="100%"><tbody>
+        <div id="subPage" key={s.v} style={{textAlign:"left",padding:10,
+          height:globs.screen.h-globs.bcHeight}}>
+        <table id="topTab" width="100%"><tbody>
         <tr height="60"><td><h3>{s.t}</h3></td>
         <td width="48">
         <img src={`/utils/${(undo)?"undo":"clr"}.png`} width="48"
@@ -583,10 +589,11 @@ function Profile() {
         <Record parms={recParms}/>
         </td></tr>
         </tbody></table>
-        <div style={{height:175}}>
+        <div id="profPrompt" style={{height:175}}>
         {user.prompts[selTab][s.v]}
         </div>
-        <textarea style={{resize:"none",width:"100%",height:screen.h-175-120-20,
+        <textarea id="profResp" ref={taRef}
+        style={{resize:"none",width:"100%",height:taHgt,
           border:"1px solid #CCCCCC"}}
           value={user[selTab][s.v]}
           onChange={e=>{doSetText(selTab,s.v,e.target.value)}}
@@ -595,8 +602,8 @@ function Profile() {
       )
 //     })
     return(
-      <div ref={tabRef} style={{overflowY:"hidden",height:screen.h-60,
-        scrollTop:900*pos
+      <div id="profPage" ref={tabRef} style={{height:globs.screen.h-globs.bcHeight,
+//         scrollTop:900*pos
 
       }}>
       {sects}
@@ -604,25 +611,25 @@ function Profile() {
     )
   }
 
-  var showTab=()=>{
-    cl("show tab")
-    if(selTab=="basic"){return showBasic()}
-//     let sectIds
-    let sects=sectIds[selTab].map(s=>{
-      return(
-      <td key={s.v} style={{color:"#0088CC",cursor:"pointer"}}
-        onClick={e=>{scrollTo(s.v)}}
-      >{s.t}</td>
-    )})
-    return(
-      <div>
-        <table width="100%"><tbody>
-        <tr height="30">{sects}</tr>
-        </tbody></table>
-        {showPrompts()}
-      </div>
-    )
-  }
+//   var showTab=()=>{
+//     cl("show tab")
+//     if(selTab=="basic"){return showBasic()}
+// //     let sectIds
+//     let sects=sectIds[selTab].map(s=>{
+//       return(
+//       <td key={s.v} style={{color:"#0088CC",cursor:"pointer"}}
+//         onClick={e=>{scrollTo(s.v)}}
+//       >{s.t}</td>
+//     )})
+//     return(
+//       <div>
+//         <table width="100%"><tbody>
+//         <tr height="30">{sects}</tr>
+//         </tbody></table>
+//         {showPrompts()}
+//       </div>
+//     )
+//   }
 
   var showMenu=(menu)=>{
 //     cl("show menu")
@@ -648,16 +655,14 @@ function Profile() {
 //   cl("render")
 //   cl(user.name)
   return (
-    <div className="App">
-      <div style={{width:globs.screen.w,height:globs.screen.h,backgroundColor:"white",
+      <div id="profCont" style={{width:globs.screen.w,height:globs.screen.h-globs.bcHeight,
+        backgroundColor:"white",
         textAlign:"left"}}>
-      <Breadcrumbs/>
       {showTabs()}
       {showFloat()}
       <div>
       </div>
       </div>
-    </div>
   );
 //       <table width="100%"><tbody>
 //       <tr height="30">

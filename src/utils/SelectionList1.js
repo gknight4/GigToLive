@@ -6,7 +6,7 @@ import {cl,} from '../utils/utils.js'
 function SelectionList1({parms}) {
   const [showList,setShowList]=useState(false)
   const [val,setVal]=useState("Unknown")
-  cl(parms)
+//   cl(parms)
   useEffect(x=>{
     setVal(parms.val)
   })

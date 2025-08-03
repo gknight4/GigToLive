@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
-import NavBar from "./navbar.js"
+import {cl,globs,
+} from '../utils/utils.js'
 
 function Communication() {
   const [email, setEmail] = useState("red");
 
   return (
     <div className="App">
-      <div style={{width:430,height:920,backgroundColor:"white"}}>
+      <div style={{width:globs.screen.w,height:globs.screen.h-globs.bcHeight,
+        backgroundColor:"white"}}>
       <h3>Communication</h3>
       </div>
     </div>

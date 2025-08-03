@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import {Button} from 'react-bootstrap';
 import SelectionList1 from "../utils/SelectionList1.js"
 import SelectionList2 from "../utils/SelectionList2.js"
+import SelGig0 from "../utils/SelGig0.js"
 import Search0 from "./Search0.js"
 import {cl,globs,tsToInDate,tsToData,procContactName,waitForWs,loadContacts,
   sortObj,
@@ -14,34 +15,43 @@ function NewContact0({parms}) {
   const [contactType,setContactType]=useState("Unknown")
   const [meetingType,setMeetingType]=useState("Unknown")
   const [followupType,setFollowupType]=useState("Unknown")
+  const [gig,setGig]=useState()
   const [selContact,setSelContact]=useState()
+  const [contact,setContact]=useState()
   const [showSelContact,setShowSelContact]=useState()
   const [contactNames,setContactNames]=useState()
   const [contactOpts,setContactOpts]=useState()
   const [contactOptSel,setContactOptSel]=useState()
+  const [loaded,setLoaded]=useState()
   const parRef=useRef()
   useEffect(x=>{
     setDate(tsToInDate(parms.event.date))
     let ev=parms.event
     if(ev.id){
-//       cl(ev)
+      cl(ev)
       setEventType(ev.eventType)
 //       setContactType(ev.contactType)
       setMeetingType(ev.meetingType)
       setSelContact(ev.selContact)
       setFollowupType(ev.followupType)
-      loadInfo()
+      setGig(ev.gig[0])
     }
+    loadInfo(ev)
   },[])
+  cl(parms)
+  cl(gig)
 
-  var loadInfo=async()=>{
-    cl("loadInfo")
+  var loadInfo=async(ev)=>{
+//     cl("loadInfo")
     await waitForWs()
     let contacts=await loadContacts(null,true)
+    if(ev.selContact){setContact(await loadContacts(ev.selContact,false))}
 //     cl(contacts)
     contacts.forEach(c=>{procContactName(c)})
     contacts=contacts.sort((a,b)=>{return sortObj(a,b,"n")})
+//     cl(contacts)
     setContactNames(contacts)
+    setLoaded(true)
   }
 
   var newTime=(vals,e)=>{
@@ -60,7 +70,9 @@ function NewContact0({parms}) {
 //       contactType:contactType,
       meetingType:meetingType,
       selContact:selContact,
-      followupType:followupType})
+      followupType:followupType,
+      gig:gig,
+    })
   }
 
   var onChange=(type,vals,e)=>{
@@ -101,8 +113,9 @@ function NewContact0({parms}) {
 //   var selContact=(vals,e)=>{
 //     cl(vals,e)
 //   }
-  var doSelectContact=(contactId)=>{
+  var doSelectContact=async(contactId)=>{
     setSelContact(contactId)
+    setContact(await loadContacts(contactId,false))
     setShowSelContact(false)
   }
 
@@ -152,7 +165,7 @@ function NewContact0({parms}) {
 
   var showContactOpts=()=>{
     if(contactOpts){
-      let opts=contactOpts.map(o=>{
+      let opts=contactOpts.map((o,i)=>{
 //         let link=""
 //         switch(contactType){
 //           case "phone":
@@ -164,12 +177,12 @@ function NewContact0({parms}) {
 //
 //         }
         return(
-          <a href={`${contactType}:${o.v}`} target="_blank"
+          <a key={i} href={`${contactType}:${o.v}`} target="_blank"
           >{o.v}<br/></a>
         )
       })
-      cl(contactOpts)
-      cl(opts)
+//       cl(contactOpts)
+//       cl(opts)
 
       return(
         <div>
@@ -181,29 +194,52 @@ function NewContact0({parms}) {
 
   var doShowSelContact=()=>{
     if(showSelContact){
+      cl(contactNames)
       return(
+        <div style={{position:"absolute",top:0,left:0,padding:10}}>
         <Search0 parms={{list:contactNames,oc:doSelectContact,parRef:parRef}}/>
+        </div>
       )
     }else{
+//       cl(selContact)
+//       cl(contactOpts)
+//       cl(contact)
+      let keys=Object.keys(contact).map(k=>{return k.substring(0,3)})
+//       cl(keys)
       return(
         <div>
           <strong>Contact: </strong>
           <span className="smHead"
           onClick={ocf(setShowSelContact,true)}
           >{getContactName(selContact)}</span><br/>
-          <span className="smHead"
-          onClick={ocf(doContactOpts,"tel")}
-          >Phone</span>&nbsp;
-          <span className="smHead"
-          onClick={ocf(doContactOpts,"sms")}
-          >Text</span>&nbsp;
-          <span className="smHead"
-          onClick={ocf(doContactOpts,"mailto")}
-          >Email</span>&nbsp;
+          {keys.includes("tel")&&
+            <>
+            <span className="smHead"
+            onClick={ocf(doContactOpts,"tel")}
+            >Phone</span>&nbsp;
+            <span className="smHead"
+            onClick={ocf(doContactOpts,"sms")}
+            >Text</span>&nbsp;
+            </>
+          }
+          {keys.includes("ema")&&
+            <>
+            <span className="smHead"
+            onClick={ocf(doContactOpts,"mailto")}
+            >Email</span>&nbsp;
+            </>
+          }
           {showContactOpts()}
         </div>
       )
     }
+  }
+
+  var doSelGig=(val)=>{
+    cl(val)
+    if(val.cmd){return}
+    setGig(val)
+
   }
 
   var doShowCreate=()=>{
@@ -217,6 +253,8 @@ function NewContact0({parms}) {
     {c:"#CC6666",d:"Sat"},
     ][tsToData(Date.parse(date)/1000).da]||{}
 //     cl(day)
+//     cl(parms)
+    if(!loaded){return}
     return(
       <div ref={parRef} style={{position:"absolute",width:globs.screen.w-40,height:400,
         border:"1px solid black",borderRadius:10,backgroundColor:"white",
@@ -227,7 +265,15 @@ function NewContact0({parms}) {
           onClick={ocf(saveNew,"cancel")}/>
         <span style={{fontSize:"1.75rem",fontWeight:500}}>
         {parms.event.id?"Edit":"New"} Event</span>
-        <div style={{marginBottom:10}}>
+        {parms.event.id&&
+          <span style={{float:"right",marginTop:8}}>
+            <Button style={{height:28,lineHeight:"14px",float:"right"}}
+            onClick={ocf(saveNew,"delete")}
+            variant="danger"
+            >Delete</Button>
+          </span>
+        }
+        <div style={{marginBottom:10,clear:"both"}}>
         <div style={{width:50,height:26,border:"1px solid black",display:"inline-block",
           backgroundColor:day.c,marginBottom:-8,color:"white",textAlign:"center",
           fontWeight:700
@@ -244,6 +290,11 @@ function NewContact0({parms}) {
         </div>
         {useSelect(true,"Event Type",
           ["Contact","Followup","Meeting","Gig Change"],eventType,setEventType)}
+        <SelGig0 parms={{
+          sel:[gig],
+          one:true,
+          oc:doSelGig,
+        }}/>
         {doShowSelContact()}
         {useSelect(eventType=="Meeting","Meeting Type",
           ["Online","Phone","Physical"],meetingType,setMeetingType)}

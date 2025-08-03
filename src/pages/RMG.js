@@ -18,13 +18,14 @@ import Register from "./register.js"
 import Record from "./Record.js"
 import Home from "./Home.js"
 import Account from "./Account.js"
+import Breadcrumbs from "../utils/Breadcrumbs.js"
 import {cl,globs,wsTrans} from '../utils/utils.js'
 
 function RMG(props) {
   const [email, setEmail] = useState("red");
   globs.loc=useLocation().pathname
   globs.navigate=useNavigate()
-  cl(globs)
+//   cl(globs.sessionId)
   if((globs.loc=="/")&&!globs.sessionId){
     cl("navigate")
     setTimeout(e=>globs.navigate("/Account"),0)}
@@ -92,15 +93,31 @@ function RMG(props) {
     })
     cl(res)
   }
+
+  var showIFrame=()=>{
+    return(
+    <iframe
+      id="hiddenIframe"
+      width="500"
+      height="500"
+      src="https://help.livenation.com/hc/en-us/articles/9816109693841-How-to-Contact-Us"
+    >
+    </iframe>
+    )
+  }
 //   cl(loc)
 //       <NavBar
 //         parms={{onChange:onChange}}
 //       />
   return (
-    <div className="App">
-      <Page
-        parms={{onChange:onChange,loc:globs.loc}}
-      />
+    <div id="rmgMain" style={{width:globs.screen.w,height:globs.screen.h,
+      backgroundColor:"white"}}>
+      <Breadcrumbs/>
+      <div id="rmgCont" style={{position:"relative"}}>
+        <Page
+          parms={{onChange:onChange,loc:globs.loc}}
+        />
+      </div>
     </div>
   );
 //       <div style={{width:430,height:920,backgroundColor:"white"}}>

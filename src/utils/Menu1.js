@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
-// import NavBar from "./navbar.js"
+import {Parser} from 'html-to-react'
+// const HtmlToReactParser = require('html-to-react').Parser;// import NavBar from "./navbar.js"
 import {cl,clLog,cl2,globs,navigate,
 } from '../utils/utils.js'
 
 function Menu1({parms}) {
+//   cl(parms)
 //   cl(parms)
 //   const [email, setEmail] = useState("red");
 //   cl2("and more")
@@ -13,6 +15,7 @@ function Menu1({parms}) {
 //     if(typeof l !="string"){l=JSON.stringify(l)}
 //     return <span key={i}>{l}<br/></span>
 //   })
+//   var htmlToReactParser = new HtmlToReactParser();
   var menus={
     mainMenu:[
       {p:"Define your Profile, Search for Gigs, Create Contacts and Documents, Update Communications, and Follow your Calendar. Start with Profile."},
@@ -40,7 +43,7 @@ function Menu1({parms}) {
     ],
   gigMenu:[
     {p:"There are five steps that a gig goes through:"},
-    {h:"Gigs",
+    {h:"Prospects",
     hl:"jobs",
     p:"This is where you accumulate all of the possible gigs. Search for Gigs, then sift through the Gigs list, and Tag the ones that you want to pursue. "},
     {h:"Tag",
@@ -57,37 +60,118 @@ function Menu1({parms}) {
     p:"At this point, all you have to do is say, 'I'll take this one'."}
   ],
   gigs_jobs:[
-    {p:"Search for available positions, and then Tag the ones you want to pursue."},
+    {p:"Search for available positions, and then Tag the ones you want to pursue. New positions are at the top of the list."},
     {h:"Search",
     hl:"search",
     p:"Use the information in your Profile to identify Job Descriptions, and then Search for current openings."},
-    {h:"New",
-    hl:"new",
-    p:"Positions found in the most recent search appear here."},
-    {h:"Old",
-    hl:"old",
-    p:"Untagged positions from previous searches are here, up to two weeks."},
+    {h:"View",
+    hl:"view",
+    p:"Positions found."},
   ],
-  gigs_jobs:[
-    {p:"Search for available positions, and then Tag the ones you want to pursue."},
-    {h:"Search",
-    hl:"search",
-    p:"Use the information in your Profile to identify Job Descriptions, and then Search for current openings."},
-    {h:"New",
-    hl:"new",
-    p:"Positions found in the most recent search appear here."},
-    {h:"Old",
-    hl:"old",
-    p:"Untagged positions from previous searches are here, up to two weeks."},
-  ],
+//   gigs_jobs:[
+//     {p:"Search for available positions, and then Tag the ones you want to pursue."},
+//     {h:"Search",
+//     hl:"search",
+//     p:"Use the information in your Profile to identify Job Descriptions, and then Search for current openings."},
+//     {h:"New",
+//     hl:"new",
+//     p:"Positions found in the most recent search appear here."},
+//     {h:"Old",
+//     hl:"old",
+//     p:"Untagged positions from previous searches are here, up to two weeks."},
+//   ],
   gigs_tag:[
-    {p:`A Cover Letter and Resume have been prepared to pitch you for \
+    {p:`A Cover Letter and Resume will be prepared to pitch you for \
 "${parms.v0}". You can view, edit, and export them in a formatted form, ready for posting or emailing.`},
     {h:"Cover Letter",
     hl:"covLetter",},
     {h:"Resume",
     hl:"resume",},
   ],
+  gigs_apply:[
+    {p:`A week or so after applying, you should follow up. In your Calendar, a Follow Up event has been scheduled a week from now for "${parms.v0}" Call the main number, get through to HR, and make your case.`},
+    {p:`<br/><h5>Some Advice</h5>
+      <p><strong>Get past the Receptionist</strong>:<br/>
+
+"Hi, this is ${parms.v2}. I’m following up on the application I submitted for the ${parms.v1} position that you advertised on Indeed. May I please speak with someone in Human Resources?"</p
+
+<p><strong>Sound like you belong</strong>.<br/>Use a calm, confident tone. Avoid sounding uncertain or like you're fishing for information.
+Be polite but assertive. Receptionists are gatekeepers. Say “please” and “thank you,” but be clear that you're not just asking for general info — you have a reason to speak with HR.<br/></p>
+
+<h5>If You Don't Get Through</h5>
+
+<p><strong>Offer to call back later</strong>.<br/> "Is there a better time when I could reach HR?"<br/></p>
+
+<p><strong>Offer to leave a message</strong>. <br/>"Would you be able to take a message and let them know I’d be grateful for a call back regarding my application?"<br/></p>
+
+<p><strong>Ask for an alternate contact</strong>. <br/>"Is there someone else in the HR department I could speak with?"</p>
+
+<p><strong>Ask for a direct number</strong>. <br/>"Is there a direct number that I can use to reach HR?"</p>
+
+<h5>When You Do Get Through To HR</h5>
+
+“I wanted to follow up and express my continued interest in the ${parms.v1} position. I’m excited about the opportunity and would be happy to provide any additional information that might be helpful.”</p>
+
+<h5>Ask Simple, Professional Questions</h5>
+
+<p><strong>To Confirm Your Application Was Received</strong>: <br/>“I wanted to confirm that my application for the ${parms.v1} position was received and complete — is there anything else you need from me?”</p>
+
+<p><strong>To Show Engagement and Initiative</strong>: <br/>“Could you tell me more about the timeline for the hiring process?” “Also, I’d love to know what qualities or experience you’re hoping to see in the ideal candidate for this role.”</p>
+
+<p><strong>You're interested in a long-term fit</strong>: <br/>"Is there anything about the company culture I should know as a candidate?"</p>
+
+<p><strong>To Express Availability</strong>: <br/>“If it’s helpful, I’d be happy to make myself available for an interview at your convenience.” “I’m very interested in this role and would love the opportunity to speak further.”</p>
+
+<p><strong>If they seem open, you can also ask</strong>: <br/>“Is there anything in my application you'd like me to expand on or clarify?”</p>
+
+<p><strong>Close Politely</strong>
+<br/>“Thank you so much for your time. I really appreciate the chance to follow up and I hope to hear from you soon.”</p>`}
+],
+  gigs_talk:[
+    {p:`For the Interview, you have to be ready to talk about the company, the industry, the position, your experience, your strengths and weaknesses, your goals, and you have to be ready to Ask Questions!`},
+    {h:"The Company",
+    hl:"Company"},
+    {h:"The Industry",
+    hl:"Industry"},
+    {h:"The Position",
+    hl:"Position"},
+    {h:"Your Experience",
+    hl:"Experience"},
+    {h:"Your Strengths",
+    hl:"Strengths"},
+    {h:"Your Weaknesses",
+    hl:"Weaknesses"},
+    {h:"Your Goals",
+    hl:"Goals"},
+    {h:"Sample Questions",
+    hl:"Sample_Questions"},
+    {h:"Your Questions",
+    hl:"Your_Questions"},
+    ],
+
+
+
+// "Can I provide any additional information to support my application?"
+// Shows you're proactive and willing to help the process move forward.
+//
+// "Could you share what the next steps look like for this position?"
+// Demonstrates your interest in the hiring timeline and process.
+//
+// "What qualities are you hoping to see in the ideal candidate?"
+// Gives you a chance to reinforce how you match those qualities in future communication or interviews.
+//
+// "Is there anything in my background you’d like me to clarify?"
+// Signals openness and confidence, while giving them a reason to re-engage.
+//
+// "How does this role contribute to the team or company’s larger goals?"
+// Shows strategic thinking and genuine interest in the company's mission.
+//
+// "Is there anything about the company culture I should know as a candidate?"
+// Signals that you’re thinking about long-term fit, not just landing the job.
+//
+// "I’m very excited about this role—could we schedule a time to talk further?"
+// A bold but respectful ask that shows readiness and initiative.
+
 
   res_style:[
     {h:"Traditional / Chronological",
@@ -274,12 +358,14 @@ function Menu1({parms}) {
     hl:"/Login",
     p:"Login / Register",},
   ],
+
+
   }
 
   var smOnClick=(link)=>{
     if(parms.cb){
-//       cl(parms.menu)
-      let item=menus[parms.menu].filter(m=>{return m.hl==link})[0]
+//       cl(menus[parms.menu])
+      let item=(menus[parms.menu]||[]).filter(m=>{return m.hl==link})[0]
 //       cl(item)
       return parms.cb({
         link:link,item:item}
@@ -293,11 +379,16 @@ function Menu1({parms}) {
   var showMenu=(menu)=>{
 //     cl(parms)
     var oc=(e)=>{return x=>smOnClick(e)}
+    var parse = new Parser();
+//     cl(menu)
     let parts=menu.map((m,i)=>{
+//       cl(m)
+      let pEl=parse.parse(m.p);
+//       cl(pEl)
       return(
         <div key={i}>
         {m.h&&<h3 className="smHead" onClick={oc(m.hl)}>{m.h}</h3>}
-        {m.p&&<p>{m.p}</p>}
+        {pEl}
         </div>
       )
     })
@@ -306,12 +397,14 @@ function Menu1({parms}) {
     )
   }
 
+//   cl(parms.dynMenu)
+//   cl(parms)
   return (
     <div className="App">
       <div style={{backgroundColor:"white",textAlign:"left",
         overflowY:"auto",padding:20,
       }}>
-      {showMenu(menus[parms.menu])}
+      {showMenu(parms.dynMenu||menus[parms.menu])}
       </div>
     </div>
   );

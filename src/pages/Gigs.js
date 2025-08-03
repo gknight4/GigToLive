@@ -1,19 +1,20 @@
 import React, { useState,useRef,useEffect,createElement } from "react";
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { TransformWrapper, TransformComponent } from
+  "@pronestor/react-zoom-pan-pinch";
 import ReactDOM from "react-dom/client";
 import NavBar from "./navbar.js"
-import Hammer from 'react-hammerjs'
+// import Hammer from 'react-hammerjs'
 import {Button} from 'react-bootstrap';
 import TopTab0 from "../utils/TopTab0.js"
 import TopLinks0 from "../utils/TopLinks0.js"
 import JobTitles0 from "../utils/JobTitles0.js"
 import Indeed00 from "../utils/Indeed00.js"
 import Menu1 from "../utils/Menu1.js"
-import Address1 from "../utils/Address1.js"
+// import Address1 from "../utils/Address1.js"
 import Breadcrumbs from "../utils/Breadcrumbs.js"
 import SelectionList0 from "../utils/SelectionList0.js"
 import {cl,wsTrans,globs,loadUser,waitForLoadInfo,waitForWs,trimStr,sortObj,
-  sortScal,showBackBut,gpOpenAi,getTime,
+  sortScal,showBackBut,gpOpenAi,getTime,customSearch,stripHtml,htmlToReact,
 
 } from '../utils/utils.js'
 
@@ -37,26 +38,35 @@ function Gigs() {
   },[])
   const userRef=useRef()
   useEffect(() => {
-//     cl("update user")
     userRef.current = user;
   }, [user]);
+//   useEffect(x=>{
+//     let[tab0,link0,doc0,func0]=globs.loc.split("/").slice(2)
+//   },[doc])
   useEffect(x=>{
-    let[tab,link,doc,func]=globs.loc.split("/").slice(2)
+//     cl("useEffect")
+    let[tab0,link0,doc0,func0]=globs.loc.split("/").slice(2)
+//     cl(tab0,link0,doc0,func0)
+//     cl(wsOpen)
     if(wsOpen){
-      setSelTab(tab)
-      setSelLink(link)
-      setSelGig(doc)
-      setDoc(doc)
-      setFunc(func)
-      if((tab=="tag")&&(["view","down","email"].includes(func))){
+      setSelTab(tab0)
+      setSelLink(link0)
+      setSelGig(doc0)
+//       cl(doc0)
+      setDoc(doc0)
+      setFunc(func0)
+      if((tab0=="tag")&&(["view","down","email"].includes(func0))){
 //         setDocViewPage(1)
-        docCheckPdf(doc)
+        docCheckPdf(doc0)
+      }
+      if(["tag","apply","talk"].includes(tab0)){setSelGig(link0)}
+      if(tab0=="talk"){
+        if(doc0&&(doc0!=doc)){
+          cl(`New Doc: ${doc0}`)
+          loadInterviewInfo(doc0)
+        }
       }
     }
-//     cl(parts)
-    if(tab=="tag"){setSelGig(link)}
-//     switch(parts[3])
-//     cl("render")
   })
 
 //   var fixJobTitles=(user)=>{
@@ -102,13 +112,60 @@ function Gigs() {
 //     )
 //   }
 
+//   var testSearch=async()=>{
+//     let str="site:mapquest.com LiveNation Los Angeles"
+//     let res=await customSearch(str)
+//     cl(res)
+//   }
+
+  var getGigAddr=async(gig)=>{
+    cl(gig)
+    let ind=gig.indeed
+    let nm=ind.company
+    let loc=ind.location
+    let str=(`site:mapquest.com ${nm}, ${loc}`).replaceAll("&", " and ")
+
+    let res=await customSearch(str)
+    cl(str)
+    cl(res)
+    if(!res.result.items){return}
+//     cl(res.result.items[0].formattedUrl)// I have the mqid here
+    let url=res.result.items[0].formattedUrl
+    cl(url)
+    res=await stripHtml(url)
+    cl(res)
+    if(res.addr){
+      Object.assign(ind,res)
+      await saveGig(gig)
+    }
+
+  }
+
+  var updateGigs=async()=>{
+//     cl(globs?.gigs0?.length)
+    let gg=globs.gigs0
+    if(!gg){return}
+//     cl(gg)
+    for(let i=0;i<globs.gigs0.length;i++){
+//       cl(gg[i])
+      if (gg[i].indeed.company&&
+        !gg[i].indeed.addr){
+        cl(gg[i].name)
+        await getGigAddr(gg[i])}
+    }
+  }
+
+
   var loadInfo=async()=>{
-//     cl("load info")
+    cl("load info")
     await waitForWs()
 //     cl("await")
     let user0=await loadUser()
     await loadGigs()
     setWsOpen(true)
+//     testSearch()
+    await updateGigs()
+//     stripHtml()
 //     cl("got gigs")
 //     cl(user0)
 //     cl(user0)
@@ -170,7 +227,7 @@ function Gigs() {
 
   var indOnChange=(gig)=>{
 //     setGig(gig)
-    cl(gig)
+//     cl(gig)
     saveGig(gig)
   }
 
@@ -244,14 +301,20 @@ function Gigs() {
 
   var getSelGigs=()=>{
 //     cl(selTab)// jobs
+//     cl(gigs)
     return (gigs||[]).filter(g=>{
       let state=g.state||"jobs"
-      return (state==selTab)&&((state=="jobs")?g.isNew==(selLink=="new"):true)
+      return (state==selTab)&&(g.indeed.company)
+      /*&&((state=="jobs")?g.isNew==(selLink=="new"):true)*/
     })
     .sort((a,b)=>{return sortObj(a,b,"name")})
   }
 
-  var getGig=()=>{return (gigs||[]).filter(g=>{return g.id==selGig})[0]||{}}
+  var getGig=()=>{
+//     cl(gigs)
+    let gig0=(gigs||[]).filter(g=>{return g.id==selGig})[0]||{}
+    return Object.assign({},gig0)
+  }
 
   var setGigState=(state)=>{
     let gig=getGig()//gigs.filter(g=>{return g.id==selGig})[0]
@@ -259,13 +322,48 @@ function Gigs() {
     saveGig(gig)
   }
 
-  var tagIt=()=>{setGigState("tag")}
+  var navUp=()=>{
+    let loc=globs.loc.split("/").slice(0,-1).join("/")
+    globs.navigate(loc)
+  }
+
+  var navOver=(type)=>{
+//     let loc=globs.loc.split("/").slice(0,-1).join("/")
+    let id=globs.loc.split("/").slice(-1)
+    let url=(type=="jobs")?
+      `/Gigs/${type}/view/${id}`:
+      `/Gigs/${type}/${id}`
+//     let parts=globs.loc.split("/")
+//     parts[parts.length-2]=type
+//     let loc=parts.join("/")
+    globs.navigate(url)
+  }
+
+//   var tagIt=()=>{
+//     setGigState("tag")
+//     navUp()
+//   }
+
 //     let gig=getGig()//gigs.filter(g=>{return g.id==selGig})[0]
 //     gig.state="tag"
 //     saveGig(gig)
 //   }
 
-  var unTag=()=>{setGigState("jobs")}
+//   var unTag=(vals)=>{
+//     cl(vals)
+//     setGigState("jobs")
+//     navUp()
+//   }
+
+  var moveGig=async(vals)=>{
+    let newType={tagit:"tag",untag:"jobs",apply:"apply",unapply:"tag",
+      talk:"talk",untalk:"apply"
+    }
+//     cl(vals)
+    cl(selGig)
+    await setGigState(newType[vals])
+    navOver(newType[vals])
+  }
 //     let gig=getGig()//gigs.filter(g=>{return g.id==selGig})[0]
 //     gig.state="jobs"
 //     saveGig(gig)
@@ -294,11 +392,12 @@ function Gigs() {
       <div style={{float:"none"}}>
       {buts.left&&
         <Button style={{float:"left"}}
-        onClick={oc(buts.left.v)}>{buts.left.t}</Button>
+        onClick={oc(buts.left.v,buts.left.v)}>{buts.left.t}</Button>
       }
+      <h3 style={{float:"left",marginLeft:50}}>{buts.title}</h3>
       {buts.right&&
         <Button style={{float:"right"}}
-        onClick={oc(buts.right.v)}>{buts.right.t}</Button>
+        onClick={oc(buts.right.v,buts.right.v)}>{buts.right.t}</Button>
       }
         <div style={{clear:"both"}}/>
       </div>
@@ -311,24 +410,38 @@ function Gigs() {
 //     .sort((a,b)=>{return sortObj(a,b,"name")})
 //     .filter(g=>{return g.name!="undefined - undefined"})
 //     cl(msg)
-    let items=getSelGigs()
-    .map(g=>{return {v:g.id,t:trimStr(g.name,50)}})
+    let gigs=getSelGigs()
+//     cl(gigs)
+    gigs=gigs.sort((a,b)=>{
+      if(a.isNew==b.isNew){
+        if(a.name.toLowerCase()<b.name.toLowerCase()){return -1}
+        if(a.name.toLowerCase()>b.name.toLowerCase()){return 1}
+        return 0
+      }else{return (a.isNew)?-1:1}
+    })
+//     cl(gigs)
+    let items=gigs
+    .map(g=>{return {
+      v:g.id,
+      t:trimStr(g.name,50),
+      h:(g.isNew?"#008000":null)
+    }})
 //     cl(items)
 //     cl(selGig)
     let gig=getGig()
 //     cl(gigs)
     if(selGig){
+//         <Hammer onSwipe={handleSwipe} direction="DIRECTION_HORIZONTAL">
+//         </Hammer>
+//         {showPages()}
       return(
-        <Hammer onSwipe={handleSwipe} direction="DIRECTION_HORIZONTAL">
         <div>
-        {showActionButton({right:{v:"tagit",t:"Tag It!"}})}
+        {showActionButton({title:"Prospects",right:{v:"tagit",t:"Tag It!"}})}
         <Indeed00 parms={{
           gig:getGig(),//gigs.filter(g=>{return g.id==selGig})[0],
           onChange:indOnChange,
         }}/>
-        {showPages()}
         </div>
-        </Hammer>
       )
     }else{
       return(
@@ -351,14 +464,19 @@ function Gigs() {
 //     )
 //   }
 
-  var saveGigToState=(gig)=>{
-    let ids=gigs.map(g=>{return g.id})
-    let pos=ids.indexOf(gig.id)
-    let gigs0=gigs.slice(0)// copy it
-    let gig0=gigs0.splice(pos,1)[0]// take it out
-    Object.assign(gig0,gig)// update it
-    gigs0.push(gig0)// add it back
-    setGigs(gigs0)// put in state
+  var saveGigToState=(gig,toGlobs)=>{// and globs
+//     let pos=gigs.map(g=>{return g.id})// find in state
+//       .indexOf(gig.id)
+//     let gig0=gigs.splice(pos,1)[0]// take it out
+//     Object.assign(gig0,gig)// update it
+//     gigs.push(gig0)// add it back
+//     setGigs(Object.assign({},gigs)// put in state
+// update globs.gigs0, and put in state
+    let pos=globs.gigs0.map(g=>{return g.id})
+      .indexOf(gig.id)
+    Object.assign(globs.gigs0[pos],gig)// update it
+    setGigs(globs.gigs0.slice(0))// put in state
+//     cl(globs.gigs0)
   }
 
   var saveGigToDb=async(gig)=>{
@@ -368,6 +486,7 @@ function Gigs() {
   }
 
   var saveGig=async(gig)=>{
+//     cl(gig.indeed.addr)
     saveGigToState(gig)
     await saveGigToDb(gig)
   }
@@ -386,7 +505,7 @@ function Gigs() {
   }
 
   var jobSelLink=(link)=>{
-//     cl(link)
+    cl(link)
     setSelGig()
     switch(link){
       case "old":
@@ -421,14 +540,24 @@ function Gigs() {
     jobs:{
       menu:e=>{return ShowMenu("gigs_jobs")},
       search:ShowJobSearch,
-      old:e=>ShowJobOld(false),
-      new:e=>ShowJobOld(true),
+      view:e=>ShowJobOld(false),
+//       new:e=>ShowJobOld(true),
     },
     tag:{
       menu:x=>{return ShowJobOld(null,"Select the gig that you want to apply for.")},
       letter:letter,
       resume:resume,
-    }
+    },
+    apply:{
+      menu:x=>{return ShowJobOld(null,"Select the gig that you want to interview for.")},
+      letter:letter,
+      resume:resume,
+    },
+    talk:{
+      menu:x=>{return ShowJobOld(null,"Select the gig that you want to interview for.")},
+      letter:letter,
+      resume:resume,
+    },
   }
 
 //   var ShowLinks=()=>{
@@ -581,14 +710,18 @@ ${styleProf}
   }
 
   var onChange=(type,vals,e)=>{
-//     cl(type)
+    cl(type)
     let types={
       docStyle:docStyle,
       newDoc:newDoc,
       emailPdf:emailDoc,
       bumpDocViewPage:bumpDocViewPage,
-      tagit:tagIt,
-      untag:unTag,
+      tagit:moveGig,
+      untag:moveGig,
+      apply:moveGig,
+      unapply:moveGig,
+      talk:moveGig,
+      untalk:moveGig,
     }
     if(types[type]){
       types[type](vals,e)
@@ -799,14 +932,19 @@ ${doc}_${docStyle}_${gig.id}-${docViewPage}.jpg`
       }else{
         return(
           <div>
-          {showActionButton({left:{v:"untag",t:"UnTag"},right:{v:"apply",t:"Applied"}})}
+          {showActionButton({title:"Tagged",left:{v:"untag",t:"UnTag"},right:{v:"apply",t:"Applied"}})}
+          <h3 style={{textAlign:"center"}}>{gig?.name}</h3>
           {ShowMenu("gigs_tag",gig?.name)}
+          <Indeed00 parms={{
+            gig:getGig(),//gigs.filter(g=>{return g.id==selGig})[0],
+            onChange:indOnChange,
+          }}/>
           </div>
         )
       }
 
     }else{
-//       cl(selTab, selLink)
+      cl(selTab, selLink)
       return(
         <div>
           {jobLinks[selTab][selLink||"menu"]()}
@@ -816,19 +954,195 @@ ${doc}_${docStyle}_${gig.id}-${docViewPage}.jpg`
   }
 
   var ShowApply=()=>{
-    return(
-      <div>
-      Apply
-      </div>
-    )
+    if(!globs.user0){return}
+    let gig=getGig()//gigs.filter
+//     cl(globs)
+//     cl(selGig)
+    cl(globs.user0)
+    if(selGig){
+      return(
+        <div>
+        {showActionButton({title:"Applied",left:{v:"unapply",t:"UnApply"},right:{v:"talk",t:"Talk"}})}
+        {ShowMenu("gigs_apply",
+          gig?.name,
+          gig?.indeed?.positionName,
+          globs.user0.profile.name
+        )}
+        <hr/>
+        <h3 style={{textAlign:"center"}}>The Gig</h3>
+        <Indeed00 parms={{
+          gig:gig,//gigs.filter(g=>{return g.id==selGig})[0],
+          onChange:indOnChange,
+        }}/>
+        </div>
+      )
+    }else{
+      cl(selTab,selLink)
+      return(
+        <div>
+          {jobLinks[selTab][selLink||"menu"]()}
+        </div>
+      )
+    }
+  }
+
+  var loadInterviewInfo=async(subject)=>{
+    let gig=getGig()
+    if(!gig||!gig.id){return}
+//     cl(gig)
+//     cl(globs.user0)
+    if((gig?.interview||{})[subject]){return}
+    var prompt
+//     cl(subject)
+    switch(subject){
+      case "Company":
+        prompt=`Create a brief description of this company: ${gig.indeed.company}. Return as simple html.`
+        break
+      case "Industry":
+        prompt=`Create a brief description of the industry that includes this company, Don't focus on the company itself, but do give attention to their place in the industry. Specifically mention their meaningful competition. Return the result in three paragraphs, as simple html. The company is:${gig.indeed.company}.`
+        break
+      case "Position":
+        prompt=`Describe the job role in the description. Don't describe the company, describe the specific job. Don't give it a title. Return the result as simple html. Description: ${gig.indeed.description}.`
+        break
+      case "Experience":
+        prompt=`Describe the experience that the candidate has for this jobRole. Don't describe the company, or the jobRole. Limit your response to 100 words. Don't give it a title. Return the result as simple html.
+        <candidate>
+        ${globs.user0.synopsis}
+        </candidate>
+        <jobRole>
+        ${gig.indeed.description}
+        </jobRole>`
+        break
+      case "Strengths":
+        prompt=`Create a description of this candidate's strengths to apply for the jobRole. Don't include a description of the company, or of the jobRole. Return the result as simple html.
+        <candidate>
+        ${globs.user0.synopsis}
+        </candidate>
+        <jobRole>
+        ${gig.indeed.description}
+        </jobRole>`
+        break
+      case "Weaknesses":
+        prompt=`Create a 100 word description in two paragraphs of this candidate's weaknesses to apply for the jobRole. Give suggestions for how these weaknesses can be overcome in an interview. Don't include a description of the company, or of the jobRole. Return the result as simple html.
+        <candidate>
+        ${globs.user0.synopsis}
+        </candidate>
+        <jobRole>
+        ${gig.indeed.description}
+        </jobRole>`
+        break
+      case "Goals":
+        prompt=`Create a description in two paragraphs of this candidate's career goals, and how they align with the described jobRole. Include only the description itself. Don't include any titles or section markers. Limit your response to 100 words. Return the result as simple html.
+        <candidate>
+        ${globs.user0.synopsis}
+        </candidate>
+        <jobRole>
+        ${gig.indeed.description}
+        </jobRole>`
+        break
+      case "Sample_Questions":
+        prompt=`Create 10 questions that the candidate may be asked in an interview for the jobRole. Pay particular attention to probing the candidate's weaknesses. Include only the questions themselves. Don't include a title at the beginning. Use bullet points, not numbers. Return the result as simple html.
+        <candidate>
+        ${globs.user0.synopsis}
+        </candidate>
+        <jobRole>
+        ${gig.indeed.description}
+        </jobRole>`
+        break
+      case "Your_Questions":
+        prompt=`Create 10 questions that the candidate can reasonably ask in an interview for the jobRole. These are questions for the candidate to ask, not the interviewer. Ask about what sets them apart from the competition. Include two questions that demonstrate a surprising knowledge of the company's current state or history. Make the questions simple. Include only the questions themselves. Don't include a title at the beginning. Use bullet points, not numbers. Return the result as simple html.
+        <candidate>
+        ${globs.user0.synopsis}
+        </candidate>
+        <jobRole>
+        ${gig.indeed.description}
+        </jobRole>`
+        break
+    }
+//     cl(prompt)
+    if(!prompt){return}
+    let res=await gpOpenAi(prompt)
+    res=res.replaceAll("<html>","")
+    res=res.replaceAll("</html>","")
+//     cl(res)
+    if(!gig.interview){gig.interview={}}
+    gig.interview[subject]=res
+    saveGig(gig)
+//     cl(gig)
+  }
+
+  var showCompany=()=>{
+
+  }
+
+  var showTalkSections=(subject)=>{
+    let gig=getGig()
+//     cl(gig)
+//     cl(globs.user0)
+    let text=(gig?.interview||{})[subject]
+    let subject0=subject.replaceAll("_"," ")
+    var title
+    switch(subject){
+      case "Position":
+        title=`${subject0}: ${gig.indeed.positionName}`
+        break
+      case "Company":
+        title=`${subject0}: ${gig.indeed.company}`
+        break
+      default:
+        title=subject0
+        break
+    }
+//     let title=(subject=="Position")?
+//       :subject0
+    if(text){
+      return(
+        <div>
+          <h3>{title}</h3>
+          {htmlToReact(gig.interview[subject])}
+        </div>
+      )
+    }else{
+      return(
+        <div>(Waiting. . .)</div>
+      )
+    }
   }
 
   var ShowTalk=()=>{
-    return(
-      <div>
-      Talk
-      </div>
-    )
+    let gig=getGig()//gigs.filter
+//     cl(globs)
+//     cl(selGig)
+    if(selGig){
+//       cl(doc)
+      if(doc){
+        return showTalkSections(doc)
+      }else{
+        return(
+          <div>
+          {showActionButton({title:"Talk",left:{v:"untalk",t:"UnTalk"},right:{v:"go",t:"Go!"}})}
+          {ShowMenu("gigs_talk",
+            gig?.name,
+            gig?.indeed?.positionName,
+            globs.user0.profile.name
+          )}
+          <hr/>
+          <h3 style={{textAlign:"center"}}>The Gig</h3>
+          <Indeed00 parms={{
+            gig:gig,//gigs.filter(g=>{return g.id==selGig})[0],
+            onChange:indOnChange,
+          }}/>
+          </div>
+        )
+      }
+    }else{
+      cl(selTab,selLink)
+      return(
+        <div>
+          {jobLinks[selTab][selLink||"menu"]()}
+        </div>
+      )
+    }
   }
 
   var ShowGo=()=>{
@@ -964,16 +1278,16 @@ var parseHtml=(html)=>{
 //
 // }
 
-var makeTest=()=>{
-//   let el=createElement("h3",null,["here I ", " and more"])
-//   let el=crEl(testObj)
-  parseHtml(testLine)
-//   return el
-}
+// var makeTest=()=>{
+// //   let el=createElement("h3",null,["here I ", " and more"])
+// //   let el=crEl(testObj)
+//   parseHtml(testLine)
+// //   return el
+// }
 
-var ShowMenu=(menu,v0)=>{
+var ShowMenu=(menu,v0,v1,v2,v3,v4)=>{
 //   cl(menu)
-  return <Menu1 parms={{menu:menu,v0:v0}}/>
+  return <Menu1 parms={{menu:menu,v0:v0,v1:v1,v2:v2,v3:v3,v4:v4}}/>
 }
 
 /**************************** end html to react ***********************/
@@ -995,16 +1309,12 @@ var ShowMenu=(menu,v0)=>{
 //   cl(selTab)
 
   return (
-    <div style={{position:"relative",width:430}}>
-      <div style={{width:430,height:globs.screen.h,backgroundColor:"white",textAlign:"left",
+      <div id="gigsCont" style={{width:globs.screen.w,height:globs.screen.h-globs.bcHeight,
+        backgroundColor:"white",textAlign:"left",
         padding:10,overflowY:"auto"
       }}>
-      {makeTest()}
-      <Breadcrumbs/>
       {Pages[selTab||"menu"]()}
-
       </div>
-    </div>
   );
 //       <TopTab0 parms={{
 //         title:"Gigs",

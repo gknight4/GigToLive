@@ -105,7 +105,6 @@ var showRegister=()=>{
     <div style={{width:430,height:globs.screen.h,backgroundColor:"white",textAlign:"left",
       padding:10,overflowY:"auto"
     }}>
-      <Breadcrumbs/>
       {(doShowRegister)?
         <h1>Register with RunMyGigs</h1>:
         <h1>Login to RunMyGigs</h1>

@@ -15,14 +15,12 @@ function Home() {
   })
 
   return (
-    <div className="App">
-      <div style={{width:globs.screen.w,height:globs.screen.h,
+      <div style={{width:globs.screen.w,height:globs.screen.h-globs.bcHeight,
         backgroundColor:"white",textAlign:"left",
         overflowY:"auto",
       }}>
       <Menu1 parms={{menu:"mainMenu"}}/>
       </div>
-    </div>
   );
 }
 

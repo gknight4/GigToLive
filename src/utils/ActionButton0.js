@@ -8,7 +8,7 @@ function ActionButton0({parms}) {
   var oc=(type,vals)=>{return e=>{parms.oc(type,vals,e)}}
 
   return (
-    <div style={{float:"none"}}>
+    <div id="abCont" style={{float:"none"}}>
     {parms.left&&
       <Button style={{float:"left"}}
       onClick={oc(parms.left.v)}>{parms.left.t}</Button>
@@ -17,7 +17,7 @@ function ActionButton0({parms}) {
       <Button style={{float:"right"}}
       onClick={oc(parms.right.v)}>{parms.right.t}</Button>
     }
-      <div style={{clear:"both"}}/>
+      <div id="abClear" style={{clear:"both"}}/>
     </div>
   );
 }

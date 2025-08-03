@@ -1,6 +1,7 @@
 import React, { useState,useRef,useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import Address1 from "../utils/Address1.js"
+import EditField1 from "./EditField1.js"
 import {cl,cl2,gpOpenAi} from '../utils/utils.js'
 
 var Indeed00=({parms})=>{
@@ -19,6 +20,7 @@ var Indeed00=({parms})=>{
   useEffect(e=>{
 //     cl(parms.gig)
     if(!parms.gig.indeed?.synopsis){makeSynopsis()}
+    if(!parms.gig.indeed.addr.nm){parms.gig.indeed.addr.nm=parms.gig.indeed.title}
     setGig(parms.gig)
   })
 
@@ -28,17 +30,33 @@ var Indeed00=({parms})=>{
     return await gpOpenAi(prompt)
   }
 
+  var getAdjectives=async(br,desc)=>{
+    let prompt=`Read the following document, and list the three adjectives that best describe the candidate that they're looking for. Return as a naked json array. This is the document:\n\n${desc}`
+//     cl(prompt)
+    return await gpOpenAi(prompt)
+  }
+
+
+  var updGig=(val,field)=>{
+    let gig0=Object.assign(gigRef.current)
+    gig0.indeed[field]=val
+    setGig(gig0)
+    parms.onChange(gig0)
+  }
+
   var makeSynopsis=async()=>{
     if(!parms.gig.indeed){return}
     cl("make synopsis")
     let desc=await procDesc(parms.gig.id,parms.gig.indeed?.description)
     let obj=JSON.parse(desc)
-//     cl(obj)
-    let gig0=Object.assign(gigRef.current)
-    gig0.indeed.synopsis=obj
-//       cl("set brand")
-    setGig(gig0)
-    parms.onChange(gig0)
+    updGig(obj,"synopsis")
+    let adj=await getAdjectives(parms.gig.id,parms.gig.indeed?.description)
+    obj=JSON.parse(adj)
+    updGig(obj,"candidate")
+//     let gig0=Object.assign(gigRef.current)
+//     gig0.indeed.synopsis=obj
+//     setGig(gig0)
+//     parms.onChange(gig0)
   }
 
 
@@ -108,6 +126,7 @@ const [showDesc,setShowDesc]=useState()
   }
 
   var putAddr=(val,e)=>{
+//     cl(e)
     let gig0=Object.assign({},gig)
     gig0.indeed.addr=e
     setGig(gig0)
@@ -128,13 +147,48 @@ const [showDesc,setShowDesc]=useState()
   var ocf=(func,val)=>{return e=>{func(val,e)}}
 
   var showAddress=()=>{
-    return(
-      <Address1 parms={{
-        label:"Address",
-        addr:gig.indeed.addr,
-        oc:ocf(putAddr)
-      }}/>
-    )
+    let addr=gig.indeed.addr
+    if(addr){
+      return(
+        <Address1 parms={{
+          label:"Address",
+          addr:addr,
+          oc:ocf(putAddr)
+        }}/>
+      )
+    }
+  }
+
+  var formatPhone=(phone)=>{
+//     cl(phone)
+    phone=phone.slice(-10)
+    return `${phone.substring(0,3)}-${phone.substring(3,6)}-${phone.substring(6)}`
+  }
+
+  var updPhone=(val,e)=>{
+//     cl(val,e)
+    let gig0=Object.assign(gigRef.current)
+    gig0.indeed.phoneNumber=e.e.replaceAll("-","")
+    setGig(gig0)
+    parms.onChange(gig0)
+//     cl(val,e)
+//     cl(e.e.target.value)
+//     gig.indeed.phoneNumber=e.e.target.value
+
+  }
+
+  var showPhone=()=>{
+//     cl(gig)
+    let phone=gig.indeed.phoneNumber
+    if(phone){
+      return(
+        <EditField1 parms={{
+          label:"Phone",
+          val:formatPhone(phone),
+          oc:ocf(updPhone)
+        }}/>
+      )
+    }
   }
 
   var showIndeed=(gig)=>{
@@ -142,18 +196,22 @@ const [showDesc,setShowDesc]=useState()
 //     cl(gig)
     if(!gig?.indeed){return}
     let ind=gig.indeed
+    let mq="https://mapquest.com"
 //     cl(ind)
     return(
       <div>
       {showInField(ind.company,"Company")}
       {showInField(ind.location,"Location")}
       {showAddress()}
+      {showPhone()}
       {showInField(`${ind.rating} / ${ind.reviewsCount}`,"Rating / Reviews")}
       {showInField(`${ind.positionName} - ${ind.jobType} `,"Position")}
       {showInField(ind.salary,"Salary")}
       {showInField(ind.postedAt,"Posted")}
       {showInLink(ind.externalApplyLink,"Apply at Company")}
       {showInLink(ind.url,"Indeed Listing")}
+      {showInLink(ind.website,"Website")}
+      {showInLink(mq+ind.slug,"MapQuest")}
       {showInLink((ind.companyInfo||{}).indeedUrl,"Indeed Company Info")}
       {showInLink((ind.companyInfo||{}).url,"Company Page")}
       {showMakeSects(ind.synopsis)}

@@ -1,4 +1,32 @@
 import {julesAvery} from "./sampleData.js"
+import {Parser} from 'html-to-react'
+
+function getStack() {
+  const obj = {};
+  if ("captureStackTrace" in Error) {
+    Error.captureStackTrace(obj, getStack);
+  }
+  return obj.stack;
+}
+
+var az=(val,ze)=>{
+  let str="000000"+val
+  return str.substr(str.length-ze)
+}
+
+var cl=async(...names)=>{// for phone debugging
+  let msg0=names.map(n=>{return JSON.stringify(n)})
+  let func=getStack().split("\n")[2].split("(")[0].trim().substring(3)
+  let dt = new Date();
+  let ti=`${az(dt.getFullYear(),2)}${az(dt.getMonth()+1,2)}\
+${az(dt.getDate(),2)}-${az(dt.getHours(),2)}\
+${az(dt.getMinutes(),2)}${az(dt.getSeconds(),2)}`
+  let msg=`${ti} ${func}: ${msg0.join(", ")}`
+  let url=`https://sidehsl.com:3203/log`
+  let method="POST"
+  let type="application/json"
+  let ret=await doGetPostBasic(url, method, msg, type)
+}
 
 var cl=console.log
 
@@ -12,10 +40,47 @@ var globs={
   wsKey:0,
   tabId:null,
   screen:{w:430,h:800},
+  isTouch:null,
   loc:"",
   navHistory:[],
   navigate:null,
+  bcHeight:26,
 }
+
+var initGlobs=()=>{
+  let w=document.documentElement.clientWidth
+  let h=document.documentElement.clientHeight
+  let maxWh={w:432,h:858}
+  if(w>maxWh.w){w=maxWh.w}
+  if(h>maxWh.h){h=maxWh.h}
+  globs.screen={w:w,h:h}
+  globs.isTouch='ontouchstart' in document.documentElement;
+}
+
+initGlobs()
+
+var showDevice=()=>{
+  var ratio = window.devicePixelRatio || 1;
+  var is_touch_device = 'ontouchstart' in document.documentElement;
+  var touch_status = (is_touch_device) ? 'touch' : 'no-touch';
+  touch_status = ' ts:' + touch_status;
+  var width_height = 'wh:' + screen.width + 'x' + screen.height;
+  var client_width_height = ' cwh:' + document.documentElement.clientWidth + 'x' + document.documentElement.clientHeight;
+  var rw = screen.width * ratio;
+  var rh = screen.height * ratio;
+  var ratio_width_height = ' r:' + ratio + ' rwh:' + rw + 'x' + rh;
+//   var data_string = wid
+  cl(`ratio: ${ratio}`)
+  cl(`is_touch_device: ${is_touch_device}`)
+  cl(`touch_status: ${touch_status}`)
+  cl(`width_height: ${width_height}`)
+  cl(`client_width_height: ${client_width_height}`)
+  cl(`rw: ${rw}`)
+  cl(`rh: ${rh}`)
+  cl(`ratio_width_height: ${ratio_width_height}`)
+
+}
+
 
 var navigate=(path)=>{
   if(!isNaN(path)){return globs.navigate(-1)}
@@ -271,12 +336,12 @@ var getLocalStorage=(key)=>{
     return  ret
   }
 
-var setTabId=async()=>{
+var setTabId=()=>{
   globs.tabId=sessionStorage.getItem("tabId")
   globs.sessionId=sessionStorage.getItem("sessionId")
 //   cl(globs.tabId,globs.sessionId)
   if(globs.tabId){return}
-  globs.tabId=await getRandomString(8)
+  globs.tabId=getRandomString(8)
   sessionStorage.setItem("tabId",globs.tabId)
 }
 
@@ -413,11 +478,11 @@ var delayPromise=(delayMs)=>{
   })
 }
 
-var openWS2=()=>{
+var openWS2=async()=>{
   if(openingWs){return}
   openingWs=true
   cl("opening")
-  openWebSocket(constant.wsUsersUrl)
+  await openWebSocket(constant.wsUsersUrl)
 }
 
 var waitForWs=async()=>{
@@ -449,7 +514,7 @@ var saveUser=async(userRef)=>{
 //   cl(resp)
 }
 
-var loadUser=async()=>{
+var loadUser=async(full)=>{
   if(!globs.sessionId){return}
 //   cl("load user")
 //   cl(globs.sessionId)
@@ -460,7 +525,93 @@ var loadUser=async()=>{
 //   cl(resp.user.profile)
 //   if(resp.ok){setMyUser(/*julesAvery*/resp.user.profile)}
 //   return julesAvery
-  return resp?.user?.profile||{}
+
+  return (full)?resp?.user:resp?.user?.profile||{}
+}
+
+var loadDocs=async()=>{
+    let res=await wsTrans({uri:"/s/docs",
+      method:"retrieve",body:{sessionId:globs.sessionId}})
+    globs.docs0=res.docs
+//     cl(res.docs)
+}
+
+var loadTable=async(id,query)=>{
+  let body=Object.assign({sessionId:globs.sessionId},query)
+//   cl(body)
+  let res=await wsTrans({uri:`/s/${id}`,method:"retrieve",
+    body:body})
+//   cl(res)
+  let data=(res.data)?res.data:res[id]
+  return res.data
+}
+
+var saveItem=async(id,data)=>{
+  let res=await wsTrans({uri:`/s/${id}`,method:"update",
+    body:{sessionId:globs.sessionId,data:data}})
+//   return res.data
+}
+
+  var loadGigs=async()=>{
+//     if(gigs){return}
+    let res=await wsTrans({uri:"/s/gigs",
+      method:"retrieve",body:{sessionId:globs.sessionId}})
+//     cl(res)
+    return res?.gigs
+//     if(res){
+//       setGigs(res.gigs.filter(g=>{return g.id}))}
+  }
+
+var get=async(type,query)=>{
+  switch(type){
+    case "docs":
+      if(!globs.docs0){
+        globs.docs0=await loadTable("docs")
+//         cl(globs.docs0)
+      }
+      if(query){// one doc why 1?
+        let doc=globs.docs0.filter(d=>{return d.id==query})[0]
+        return doc
+      }else{// all docs
+        return globs.docs0
+      }
+      break
+    case "gigs":
+      if(!globs.gigs0){
+        globs.gigs0=await loadTable("gigs")
+//         cl(globs.gigs0)
+      }
+      return globs.gigs0
+      break
+    case "events":
+      if(!globs.events0){
+        globs.events0=await loadTable("events",query)
+//         cl(globs.events0)
+      }
+      return globs.events0
+      break
+    default:
+      break
+  }
+}
+
+var put=async(type,data)=>{
+//   cl(data)
+  switch(type){
+    case "docs":
+      let doc0=globs.docs0.filter(d=>{return d.id==data.id})[0]
+//       cl(doc0)
+      if(doc0){
+        Object.assign(doc0,data)
+      }else{
+        globs.docs0.push(data)
+      }
+//       cl(data)
+      await saveItem("docs",data)
+      break
+    default:
+      break
+  }
 }
 
 var loadContacts=async(contactId,namesOnly)=>{
@@ -494,11 +645,6 @@ var gpOpenAi=async(prompt)=>{
 
 }
 
-var az=(val,ze)=>{
-  let str="000000"+val
-  return str.substr(str.length-ze)
-}
-
 var doGetPostBasic=(url, method, body=null, type='')=>{
 //   cl(url,method,body,type)
   return new Promise((res, rej)=>{
@@ -508,7 +654,7 @@ var doGetPostBasic=(url, method, body=null, type='')=>{
     }
     if(body) options.body = body;
     if(type) options['content-type']=type
-    return fetch(url, options).then(
+    /*return */fetch(url, options).then(
       r=>{
         res(r)},
       e=>{
@@ -519,7 +665,7 @@ var doGetPostBasic=(url, method, body=null, type='')=>{
 }
 
 var trimStr=(str,len)=>{
-  return(str.length>len)?str=str.substring(0,len-2)+"...":str
+  return(str.length>len)?str.substring(0,len-2)+"...":str
 }
 
 var sortObj=(a,b,field)=>{
@@ -571,6 +717,15 @@ var tsToInDate=(ts)=>{
   let dt=tsToData(ts)
 //   cl(dt)
   return `${dt.yr}-${az(dt.mo+1,2)}-${az(dt.dt,2)}T${az(dt.hr,2)}:${az(dt.mn,2)}`
+}
+
+var tsToDisplay=(ts,format)=>{
+  let dt=tsToData(ts)
+  switch(format){
+    case "mm/dd/yy hh/mm":
+      return `${az(dt.mo+1,2)}/${az(dt.dt,2)}/${dt.yr} ${az(dt.hr,2)}:${az(dt.mn,2)}`
+      break
+  }
 }
 
 
@@ -740,11 +895,135 @@ var ufs={
   },
 }
 
+var getHtml=async(url)=>{
+  cl(globs)
+  return await wsTrans({
+    cmd:"cRest",
+    uri:"/s/web",
+    method:"retrieve",
+    sesh:globs.sessionId,
+    body:{
+      url:url,
+      sessionId:globs.sessionId,
+    }
+  })
+}
+
+var stripHtml=async(url)=>{
+  cl("get html")
+//   url="https://www.mapquest.com/us/california/live-nation-269790640"
+  let html=await getHtml(url)
+  cl(html)
+  let info={}
+  html[0][3].children.forEach(c=>{
+    switch((c||[])[1]){
+      case "$L2e":
+      case "$L2f":
+      case "$L30":
+      case "$L31":
+      case "$L32":
+      case "$L33":
+      case "$L34":
+      case "$L35":
+      case "$L36":
+      case "$L37":
+      case "$L38":
+      case "$L39":
+        cl(c)
+        if(!info.addr){info.addr=c[3].address}
+        if(!info.phoneNumber){info.phoneNumber=c[3].phoneNumber}
+        if(!info.slug){info.slug=c[3].slug}
+        if(!info.title){info.title=c[3].title}
+        if(!info.website){info.website=c[3].website}
+        break
+//       case "$L30":
+//         cl(c)
+//         cl(c[3])
+//         cl(c[3].address)
+//         if(!info.title){info.title=c[3].title}
+//         if(!info.phoneNumber){info.phoneNumber=c[3].phoneNumber}
+//         if(!info.website){info.website=c[3].website}
+//         if(!info.addr){info.addr=c[3].address}
+//         if(!info.slug){info.slug=c[3].slug}
+//         break
+//       case "$L31":
+//         cl(c)
+//         if(!info.addr){info.addr=c[3].address}
+//         if(!info.slug){info.slug=c[3].slug}
+//         break
+//       case "$L32":
+//         cl(c)
+//         if(!info.phoneNumber){info.phoneNumber=c[3].phoneNumber}
+//         if(!info.website){info.website=c[3].website}
+//         if(!info.addr){info.addr=c[3].address}
+//         if(!info.slug){info.slug=c[3].url}
+//         break
+//       case "$L33":
+//         cl(c)
+//         if(!info.title){info.title=c[3].title}
+//         break
+      default:
+        break
+    }
+  })
+//   cl(info)
+  return info
+//   let text=[]
+//   let angDepth=0
+//   for(let i=0;i<html.length;i++){
+//     let ch=html[i]
+//     if(["<",">"].includes(ch)){
+//       angDepth+=(ch=="<")?1:-1
+//     }else{
+//       if(!angDepth){text.push(ch)}
+//     }
+//   }
+//   let text0=text.join("")
+//   cl(text0)
+//   cl(angDepth)
+}
+
+var htmlToReact=(html)=>{
+  if(!globs.parse){globs.parse=new Parser()}
+  return globs.parse.parse(html)
+}
+
+var gcsApiKey="AIzaSyDjSriONxpjMXWR8PQZcGMXETx7mafC_mI"
+var gcsSearchEngineId="c5646753f4d01404c"
+
+var loadGoogleCustomSearchClient=async()=>{
+  await gapi.load("client");// doesn't await'
+  while(!gapi.client){await delayPromise(100)}// await here
+  gapi.client.setApiKey(gcsApiKey);
+  try{
+    let url="https://customsearch.googleapis.com/$discovery/rest?version=v1"
+    await gapi.client.load(url)
+//     cl("GAPI client loaded for API")
+  }catch{
+    cl("Error loading GAPI client for API")
+  }
+}
+
+var customSearch=async(query)=>{
+  try{
+    return await gapi.client.search.cse.list({
+      cx:gcsSearchEngineId,
+      q:query
+    })
+  }catch{
+    cl("Custom Search Error")
+  }
+}
+
+// showDevice()
+
 export {cl,getTime,wsTrans,globs,saveLocalStorage,openWs,
   getLocalStorage,ufs,constant,setTabId,initUsersWs,
   ws2Open,ws2send,ws2Sub,ws2UnSub,getRandomString,makeTypeName,
   brands,gpOpenAi,saveBrand,az,clLog,cl2,navigate,navBack,nav,
   doGetPostBasic,loadUser,saveUser,waitForWs,tsToInDate,
   openWebSocket,openWS2,trimStr,sortObj,sortScal,showBackBut,
-  tsToData,loadContacts,loadEvents,procContactName,
+  tsToData,loadContacts,loadEvents,procContactName,loadGigs,
+  loadGoogleCustomSearchClient,customSearch,stripHtml,htmlToReact,
+  loadDocs,get,put,tsToDisplay,
 }

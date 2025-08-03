@@ -5,6 +5,7 @@ import Menu0 from "../utils/Menu0.js"
 import Search0 from "../utils/Search0.js"
 import FileUpload from "../utils/FileUpload.js"
 import Address1 from "../utils/Address1.js"
+import Phone1 from "../utils/Phone1.js"
 import Breadcrumbs from "../utils/Breadcrumbs.js"
 import Record from "./Record.js"
 import {cl,globs,wsTrans,loadContacts,waitForWs,sortScal,sortObj,
@@ -624,6 +625,11 @@ var showContactSelect=()=>{
       {showEditField("Last","Ln")}
       {showEditField("Organization","org")}
       {showEditField("Web","url")}
+      <Phone1 parms={{
+        label:"Address",
+        addr:getAddr("D"),
+        oc:ocf(putAddr,"D")
+      }}/>
       {showEditField("Tel Home","telH")}
       {showEditField("Tel Work","telW")}
       {showEditField("Tel Cell","telC")}
@@ -652,7 +658,7 @@ var showContactSelect=()=>{
 //     cl("show select")
 //     cl(parRef.current)
     return(
-      <div style={{width:globs.screen.w,height:globs.screen.h,
+      <div id="contSearch" style={{width:globs.screen.w,height:globs.screen.h-globs.bcHeight,
         backgroundColor:"white",
         }}>
         <Search0 parms={{list:contactNames,oc:doSetSelContact,parRef:parRef}}/>
@@ -670,12 +676,12 @@ var showContactSelect=()=>{
 
 var showImportPage=()=>{
   return(
-    <div ref={parRef}
-    style={{width:430,height:920,backgroundColor:"white",textAlign:"left",
+    <div id="contMain" ref={parRef}
+    style={{width:globs.screen.w,height:globs.screen.h-globs.bcHeight,
+      backgroundColor:"white",textAlign:"left",
       overflowY:"auto"
 //       padding:10,
       }}>
-      <Breadcrumbs/>
       {showContactSelect()}
     </div>
   )

@@ -5,6 +5,7 @@ import {cl} from '../utils/utils.js'
 var SelectionList0=({parms})=>{
   const [selItem,setSelItem]=useState()
 //   cl(parms)
+//   cl(parms.list)
 
   var doSelItem=(item)=>{
     setSelItem(item)
@@ -15,6 +16,7 @@ var SelectionList0=({parms})=>{
     return(
       <tr key={it.v}>
       <td style={{cursor:"pointer",
+        color:it.h,
         backgroundColor:(it.v==selItem)?"#80C0FF":"#FFFFFF",
       }}
       onClick={e=>doSelItem(it.v)}
